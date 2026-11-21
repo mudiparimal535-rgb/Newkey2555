@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NORIX Admin Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+        body {
+            background: #050a0e; color: #d1fae5;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 15px;
+        }
+        .panel {
+            background: #070d12; border: 1px solid #00ff88;
+            border-radius: 10px; padding: 24px;
+            width: 100%; max-width: 420px;
+        }
+        h2 { text-align: center; margin-bottom: 16px; color: #00f0ff; }
+        input, textarea {
+            width: 100%; background: #04080b; border: 1px solid #00ff88;
+            color: #fff; padding: 12px; border-radius: 6px;
+            margin-bottom: 12px; font-size: 14px;
+        }
+        textarea { height: 160px; resize: vertical; }
+        .stats {
+            display: flex; justify-content: space-between;
+            background: #04080b; padding: 12px; border-radius: 6px;
+            margin-bottom: 14px; font-size: 13px; border: 1px solid rgba(0,255,136,0.3);
+        }
+        .stats span b { display: block; font-size: 18px; margin-top: 2px; }
+        .btn {
+            width: 100%; padding: 12px; border: 1px solid #00ff88; border-radius: 6px;
+            font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: 10px;
+            background: #061014; color: #00ff88;
+        }
+        .btn-clear { border-color: #f87171; color: #f87171; }
+        .status { text-align: center; font-size: 13px; color: #fbbf24; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h2>&gt; NORIX ADMIN</h2>
+
+        <div id="loginBox">
+            <input type="password" id="adminPass" placeholder="Enter Admin Password">
+            <button class="btn" onclick="loginAdmin()">[ UNLOCK PANEL ]</button>
+        </div>
+
+        <div id="dashBox" style="display:none;">
+            <div class="stats">
+                <span>Total<b id="stTotal">0</b></span>
+                <span style="color:#00ff88;">Available<b id="stUnused">0</b></span>
+                <span style="color:#f87171;">Claimed<b id="stUsed">0</b></span>
+            </div>
+
+            <textarea id="keysInput" placeholder="Paste new keys here (one per line)..."></textarea>
+            <button class="btn" onclick="uploadKeys()">[ UPLOAD KEYS ]</button>
+            <button class="btn btn-clear" onclick="clearUsed()">[ CLEAR CLAIMED HISTORY ]</button>
+        </div>
+
+        <div id="msg" class="status"></div>
+    </div>
+
+    <script>
+        let savedPass = "";
+
+        async function loginAdmin() {
+            const pass = document.getElementById('adminPass').value;
+            const res = await fetch('/api/admin/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            });
+            const data = await res.json();
+            if (data.status === "success") {
+                savedPass = pass;
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('dashBox').style.display = 'block';
+                updateStatsUI(data);
+                document.getElementById('msg').innerText = "";
+            } else {
+                document.getElementById('msg').innerText = data.message;
+            }
+        }
+
+        function updateStatsUI(data) {
+            document.getElementById('stTotal').innerText = data.total;
+            document.getElementById('stUnused').innerText = data.unused;
+            document.getElementById('stUsed').innerText = data.used;
+        }
+
+        async function refreshStats() {
+            const res = await fetch('/api/admin/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: savedPass })
+            });
+            const data = await res.json();
+            if (data.status === "success") updateStatsUI(data);
+        }
+
+        async function uploadKeys() {
+            const keys = document.getElementById('keysInput').value;
+            const res = await fetch('/api/admin/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: savedPass, keys: keys })
+            });
+            const data = await res.json();
+            document.getElementById('msg').innerText = data.message;
+            if (data.status === "success") {
+                document.getElementById('keysInput').value = "";
+                refreshStats();
+            }
+        }
+
+        async function clearUsed() {
+            const res = await fetch('/api/admin/clear-used', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: savedPass })
+            });
+            const data = await res.json();
+            document.getElementById('msg').innerText = data.message;
+            refreshStats();
+        }
+    </script>
+</body>
+</html>
