@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NORIX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #050a0e;
+            background-image: 
+                linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #d1fae5;
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .terminal-card {
+            background: #070d12;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.15), inset 0 0 15px rgba(0, 255, 136, 0.05);
+            border-radius: 10px;
+            padding: 22px 18px;
+            width: 100%;
+            max-width: 390px;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #00f0ff;
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+            letter-spacing: 1.5px;
+        }
+        .status-online {
+            font-size: 12px;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 1px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00ff88;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .console-box {
+            background: #04080b;
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #94a3b8;
+        }
+        .console-box span.highlight {
+            color: #00f0ff;
+        }
+        .section-label {
+            font-size: 12px;
+            color: #64748b;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .cyber-btn {
+            width: 100%;
+            background: #061014;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            padding: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+        .cyber-btn:hover:not(:disabled) {
+            background: rgba(0, 255, 136, 0.12);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.35);
+        }
+        .cyber-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .key-output {
+            display: none;
+            margin-top: 14px;
+            background: #03070a;
+            border: 1px dashed #00f0ff;
+            padding: 14px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .key-text {
+            font-size: 16px;
+            color: #00ff88;
+            letter-spacing: 1px;
+            word-break: break-all;
+            margin-bottom: 10px;
+            user-select: all;
+        }
+        .copy-small {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid #00f0ff;
+            color: #00f0ff;
+            font-family: 'Share Tech Mono', monospace;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .msg-line {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #fbbf24;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-card">
+        <div class="header-bar">
+            <div class="brand-title">&gt; NORIX</div>
+            <div class="status-online"><span class="dot"></span> ONLINE</div>
+        </div>
+
+        <div class="console-box">
+            <div>&gt; Select access mode.</div>
+            <div>&gt; Status: <span class="highlight" id="statusText">{{ 'Verified. Ready to unlock.' if verified else 'Awaiting input.' }}</span></div>
+            <div>&gt; {{ 'Click below to claim your 24h key.' if verified else 'Complete verification to unlock key (1 Key / Day).' }}</div>
+        </div>
+
+        <div class="section-label">// ACCESS KEY</div>
+
+        <button id="mainBtn" class="cyber-btn" onclick="handleAction()">[ GET KEY ]</button>
+
+        <div id="keyBox" class="key-output">
+            <div id="keyVal" class="key-text"></div>
+            <button id="copyBtn" class="copy-small" onclick="copyKey()">[ COPY KEY ]</button>
+        </div>
+
+        <div id="msgBox" class="msg-line"></div>
+    </div>
+
+    <script>
+        const IS_VERIFIED = {{ 'true' if verified else 'false' }};
+        const V_TOKEN = "{{ v_token }}";
+
+        window.onload = function() {
+            const saved = localStorage.getItem('norix_key_data');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Date.now() - parsed.time < 86400000) {
+                    displayKey(parsed.key, "Active key loaded (24h limit).");
+                } else {
+                    localStorage.removeItem('norix_key_data');
+                }
+            }
+        };
+
+        async function handleAction() {
+            const btn = document.getElementById('mainBtn');
+            const statusText = document.getElementById('statusText');
+            const msgBox = document.getElementById('msgBox');
+            btn.disabled = true;
+            msgBox.innerText = "";
+
+            if (!IS_VERIFIED) {
+                btn.innerText = "[ GENERATING LINK... ]";
+                statusText.innerText = "Creating secure gateway...";
+                try {
+                    const res = await fetch('/api/create-link', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.status === "success" && data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        msgBox.innerText = "> Error: " + (data.message || "Failed to create link");
+                        statusText.innerText = "Gateway error.";
+                        btn.disabled = false;
+                        btn.innerText = "[ GET KEY ]";
+                    }
+                } catch (e) {
+                    msgBox.innerText = "> Network error. Try again.";
+                    btn.disabled = false;
+                    btn.innerText = "[ GET KEY ]";
+                }
+            } else {
+                btn.innerText = "[ UNLOCKING... ]";
+                statusText.innerText = "Fetching VIP key...";
+                try {
+                    const res = await fetch('/api/get-key', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ v_token: V_TOKEN })
+                    });
+                    const data = await res.json();
+                    if (data.key) {
+                        localStorage.setItem('norix_key_data', JSON.stringify({ key: data.key, time: Date.now() }));
+                        displayKey(data.key, data.message);
+                    } else {
+                        msgBox.innerText = "> " + (data.message || "Error claiming key.");
+                        btn.disabled = false;
+                        btn.innerText = "[ GET KEY ]";
+                    }
+                } catch (e) {
+                    msgBox.innerText = "> Network error. Try again.";
+                    btn.disabled = false;
+                    btn.innerText = "[ GET KEY ]";
+                }
+            }
+        }
+
+        function displayKey(key, msg) {
+            document.getElementById('mainBtn').style.display = 'none';
+            document.getElementById('keyBox').style.display = 'block';
+            document.getElementById('keyVal').innerText = key;
+            document.getElementById('statusText').innerText = "Access Unlocked.";
+            document.getElementById('msgBox').innerText = "> " + msg;
+        }
+
+        function copyKey() {
+            const txt = document.getElementById('keyVal').innerText;
+            navigator.clipboard.writeText(txt);
+            const cBtn = document.getElementById('copyBtn');
+            cBtn.innerText = "[ COPIED! ]";
+            setTimeout(() => { cBtn.innerText = "[ COPY KEY ]"; }, 2000);
+        }
+    </script>
+</body>
+</html>
